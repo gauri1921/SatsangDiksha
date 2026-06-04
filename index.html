@@ -460,13 +460,53 @@ const TOTAL=315, MILESTONES=[50,100,150,200,250,300,315];
     return q;
   }
   
+  // REVISION
+  let revQueue=[], revIndex=0, revRevealed=false;
+
+  function buildRevQueue(from,to,shuffle){
+    let q=[];
+    for(let i=from-1;i<to;i++) q.push(i);
+    if(shuffle){for(let i=q.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[q[i],q[j]]=[q[j],q[i]];}}
+    return q;
+  }
   function initRevision(){
     const from=parseInt(document.getElementById("rangeFrom").value)||1;
     const to=parseInt(document.getElementById("rangeTo").value)||315;
     revQueue=buildRevQueue(Math.max(1,from),Math.min(315,to),false);
-    revIndex=0;
-    revRevealed=false;
-    renderShloka();
+    revIndex=0; revRevealed=false; renderShloka();
+  }
+  function shuffleMode(){
+    const from=parseInt(document.getElementById("rangeFrom").value)||1;
+    const to=parseInt(document.getElementById("rangeTo").value)||315;
+    revQueue=buildRevQueue(Math.max(1,from),Math.min(315,to),true);
+    revIndex=0; revRevealed=false; renderShloka();
+  }
+  function applyRange(){initRevision();}
+  function resetRevision(){initRevision();}
+  function prevShloka(){if(revIndex>0){revIndex--;revRevealed=false;renderShloka();}}
+  function nextShloka(){if(revIndex<revQueue.length-1){revIndex++;revRevealed=false;renderShloka();}}
+  function revealShloka(){revRevealed=true;renderShloka();}
+  function renderShloka(){
+    if(!revQueue.length) initRevision();
+    const idx=revQueue[revIndex];
+    const s=SHLOKAS[idx];
+    if(!s) return;
+    document.getElementById("revNum").textContent=s.num;
+    document.getElementById("revProgress").textContent=(revIndex+1)+" / "+revQueue.length;
+    document.getElementById("prevBtn").disabled=(revIndex===0);
+    document.getElementById("nextBtn").disabled=(revIndex===revQueue.length-1);
+    const lines=s.sanskrit.split('\n').filter(l=>l.trim());
+    const words=(lines[0]||'').trim().split(/\s+/);
+    const hint=words.slice(0,2).join(' ');
+    let sanskritHTML=!revRevealed
+      ? '<div class="sanskrit-hint"><span class="shown">'+hint+'</span><span class="hidden"> ••• ••• •••••••••••</span></div>'
+      : '<div class="sanskrit-text">'+lines.map(l=>'<div>'+l+'</div>').join('')+'</div>';
+    document.getElementById("shlokaCard").innerHTML='<div class="shloka-card"><div class="shloka-num-badge">'+s.num+'</div>'+sanskritHTML+(!revRevealed
+      ? '<button class="reveal-btn" onclick="revealShloka()">👁 Tap to reveal full shloka</button>'
+      : '<hr class="divider-line"/><div class="gujarati-label">Gujarati</div><div class="gujarati-text">'+(s.gujarati||'—')+'</div><hr class="divider-line"/><div class="english-label">English</div><div class="english-text">'+(s.english||'—')+'</div>'
+    )+'</div>';
+  }
+  initRevision();
   }
   
   function shuffleMode(){
